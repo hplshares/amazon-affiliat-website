@@ -1,0 +1,205 @@
+================================================================
+HPL SHARES - NEXT.JS SETUP GUIDE
+From zero to live in under 30 minutes
+================================================================
+
+WHAT YOU NEED BEFORE STARTING
+- A computer with internet
+- A Google account (for Firebase)
+- A GitHub account (free) - github.com
+- Node.js installed - download from nodejs.org (LTS version)
+
+================================================================
+STEP 1 - INSTALL NODE.JS
+================================================================
+1. Go to: https://nodejs.org
+2. Download and install the LTS version
+3. After install, open Terminal (Mac) or Command Prompt (Windows)
+4. Type: node -v
+5. You should see a version number like v20.x.x
+6. Type: npm -v
+7. You should see a version number
+
+================================================================
+STEP 2 - CREATE FIREBASE PROJECT
+================================================================
+1. Go to: https://console.firebase.google.com
+2. Click "Add Project"
+3. Name: hpl-shares
+4. Disable Google Analytics > Click "Create Project"
+5. Wait 30 seconds
+
+--- Set up Firestore ---
+6. In left sidebar, click "Firestore Database"
+7. Click "Create Database"
+8. Choose "Start in Production Mode" > Next
+9. Region: asia-south1 (Mumbai) > Enable
+
+--- Set up Authentication ---
+10. In left sidebar, click "Authentication"
+11. Click "Get Started"
+12. Click "Email/Password" > Enable it > Save
+13. Click "Add User"
+14. Enter YOUR email and a strong password > Add User
+    (This becomes your admin login)
+
+--- Get Client Config Keys ---
+15. Click the gear icon > "Project Settings"
+16. Scroll to "Your Apps" > Click "</>" (Web icon)
+17. App nickname: hpl-shares > Register App
+18. Copy the firebaseConfig values - you will need them in Step 4
+
+--- Get Admin SDK Keys ---
+19. Still in Project Settings > Click "Service Accounts" tab
+20. Click "Generate New Private Key" > Download the JSON file
+21. Open the JSON file - you need: project_id, client_email, private_key
+
+================================================================
+STEP 3 - APPLY FIRESTORE SECURITY RULES
+================================================================
+1. In Firebase Console > Firestore Database > Rules tab
+2. Replace ALL existing text with the contents of: firestore.rules
+3. Click "Publish"
+
+================================================================
+STEP 4 - SET UP YOUR ENVIRONMENT FILE
+================================================================
+1. In the project folder, find the file: .env.example
+2. Make a copy and rename the copy to: .env.local
+3. Open .env.local and fill in all values:
+
+   From Firebase Client Config (Step 2 item 18):
+   NEXT_PUBLIC_FIREBASE_API_KEY=
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+   NEXT_PUBLIC_FIREBASE_APP_ID=
+
+   From Firebase Admin SDK JSON (Step 2 item 21):
+   FIREBASE_ADMIN_PROJECT_ID=        (same as project_id in JSON)
+   FIREBASE_ADMIN_CLIENT_EMAIL=      (client_email from JSON)
+   FIREBASE_ADMIN_PRIVATE_KEY=       (private_key from JSON - keep the quotes)
+
+   Admin allowed emails:
+   ADMIN_ALLOWED_EMAILS=your@email.com   (the email you created in Step 2 item 14)
+
+   Generate a random secret (open Terminal and run):
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   NEXTAUTH_SECRET=paste_result_here
+
+   NEXTAUTH_URL=http://localhost:3000
+   NEXT_PUBLIC_SITE_URL=https://hplshares.in   (your actual domain later)
+
+IMPORTANT: Never share or upload .env.local anywhere. It is in .gitignore already.
+
+================================================================
+STEP 5 - RUN LOCALLY (TEST BEFORE DEPLOYING)
+================================================================
+1. Open Terminal in the project folder
+2. Run: npm install
+3. Wait for packages to install (2-3 minutes first time)
+4. Run: npm run dev
+5. Open browser: http://localhost:3000
+6. Your store should load (empty, no products yet)
+7. Go to: http://localhost:3000/admin/login
+8. Log in with the email and password from Step 2 item 14
+9. Add a test product - confirm it appears on the store
+
+================================================================
+STEP 6 - DEPLOY TO GITHUB
+================================================================
+1. Go to: https://github.com/new
+2. Repository name: hpl-shares
+3. Set to Private (recommended)
+4. Click "Create Repository"
+5. In Terminal inside your project folder, run these commands one by one:
+   git init
+   git add .
+   git commit -m "Initial HPL Shares website"
+   git branch -M main
+   git remote add origin https://github.com/YOUR_USERNAME/hpl-shares.git
+   git push -u origin main
+
+================================================================
+STEP 7 - DEPLOY TO VERCEL
+================================================================
+1. Go to: https://vercel.com
+2. Sign in with GitHub
+3. Click "New Project"
+4. Import your hpl-shares repository
+5. IMPORTANT - Before clicking Deploy, click "Environment Variables"
+6. Add EVERY variable from your .env.local file one by one
+   (Copy each key and value from .env.local into Vercel)
+7. Change NEXTAUTH_URL to your Vercel URL (e.g. https://hpl-shares.vercel.app)
+8. Click "Deploy"
+9. Wait 2-3 minutes
+
+YOUR SITE IS LIVE at: https://hpl-shares.vercel.app
+ADMIN PANEL at: https://hpl-shares.vercel.app/admin/login
+
+================================================================
+STEP 8 - CUSTOM DOMAIN (Optional)
+================================================================
+1. Buy domain: hplshares.in (recommended) from GoDaddy/Namecheap
+2. In Vercel > Your Project > Settings > Domains
+3. Add: hplshares.in
+4. Vercel shows you DNS settings to update
+5. Go to your domain registrar and update the DNS
+6. Wait up to 24 hours for DNS to propagate
+7. Update NEXT_PUBLIC_SITE_URL and NEXTAUTH_URL in Vercel environment variables
+
+================================================================
+HOW TO ADD PRODUCTS AFTER LAUNCH
+================================================================
+1. Go to: your-domain.com/admin/login
+2. Log in with your Firebase email and password
+3. Fill in:
+   - Product Name: exact name from Amazon
+   - Category: select from dropdown
+   - Price: current Amazon price
+   - Amazon Affiliate Link: copy from Amazon Associates dashboard
+   - Image URL: right-click product image on Amazon > Copy Image Address
+4. Check "Featured" to show in Featured section
+5. Click "Add Product" - appears on store instantly
+
+================================================================
+FILE STRUCTURE OVERVIEW
+================================================================
+hplshares-next/
+  src/
+    app/
+      page.tsx               Store homepage (SSR - Google can index this)
+      layout.tsx             Global SEO metadata and layout
+      sitemap.ts             Auto-generated sitemap.xml
+      robots.ts              robots.txt configuration
+      globals.css            Global styles
+      api/
+        products/route.ts    Public products API
+        auth/route.ts        Admin login/logout API
+        admin/products/      Admin CRUD API (protected)
+    components/
+      store/                 Public store components
+      admin/                 Admin panel components
+    lib/
+      firebase.ts            Firebase client (browser)
+      firebase-admin.ts      Firebase Admin (server only)
+    types/
+      index.ts               TypeScript types
+  public/
+    favicon.svg              Browser tab icon
+  .env.example               Copy to .env.local and fill in
+  .env.local                 YOUR SECRETS - never commit this
+  .gitignore                 Protects secrets from GitHub
+  firestore.rules            Firebase security rules
+  next.config.js             Security headers + image config
+  tailwind.config.js         Brand design tokens
+  package.json               Project dependencies
+
+================================================================
+SUPPORT
+================================================================
+WhatsApp: +91 90909 78910
+Email: support@tech-daddy.in
+Website: tech-daddy.in
+================================================================
